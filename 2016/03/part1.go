@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -17,11 +16,7 @@ func main() {
 		}
 
 		var a, b, c int
-		if n, err := fmt.Sscanf(strings.TrimSpace(scanner.Text()), "%d %d %d\n",
-			&a,
-			&b,
-			&c,
-		); err != nil {
+		if n, err := fmt.Sscanf(scanner.Text(), "%d %d %d", &a, &b, &c); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		} else if n != 3 {
@@ -29,7 +24,7 @@ func main() {
 			os.Exit(1)
 		}
 
-		fmt.Printf("%d + %d > %d => %v\n", a, b, c, (a+b > c))
+		//fmt.Printf("%d + %d > %d => %v\n", a, b, c, (a+b > c))
 		if a+b > c && b+c > a && a+c > b {
 			valid++
 		}
