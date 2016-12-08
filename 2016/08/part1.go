@@ -57,18 +57,28 @@ func main() {
 
 func drawScreen(scr *[6][50]bool) {
 	time.Sleep(10 * time.Millisecond)
-	fmt.Println("\033c--------------------------------------------------")
+	fmt.Print("\033c\u250C")
+	for i := 0; i < 50; i++ {
+		fmt.Print("\u2500")
+	}
+	fmt.Println("\u2510")
 	for y := 0; y < len(scr); y++ {
+		fmt.Print("\u2502")
 		for x := 0; x < len(scr[y]); x++ {
 			if scr[y][x] {
+				//fmt.Print("\u2573")
 				fmt.Print("#")
 			} else {
 				fmt.Print(" ")
 			}
 		}
-		fmt.Println()
+		fmt.Println("\u2502")
 	}
-	fmt.Println("--------------------------------------------------")
+	fmt.Print("\u2514")
+	for i := 0; i < 50; i++ {
+		fmt.Print("\u2500")
+	}
+	fmt.Println("\u2518")
 }
 
 func shiftRow(screen *[6][50]bool, n, by int) {
