@@ -67,7 +67,9 @@ func drawScreen(scr *[6][50]bool) {
 		for x := 0; x < len(scr[y]); x++ {
 			if scr[y][x] {
 				//fmt.Print("\u2573")
-				fmt.Print("#")
+				//fmt.Print("#")
+				//fmt.Print("\u203B")
+				fmt.Print("\u220e")
 			} else {
 				fmt.Print(" ")
 			}
