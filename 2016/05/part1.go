@@ -18,7 +18,7 @@ func main() {
 
 	input := flag.Arg(0)
 	var found int
-	var passwd []byte
+	var passwd = []byte("********")
 	for i := 0; ; i++ {
 		if found == 8 {
 			break
@@ -26,11 +26,11 @@ func main() {
 		in := fmt.Sprintf("%s%d", input, i)
 		sum := md5.Sum([]byte(in))
 		hex := fmt.Sprintf("%x", sum)
-		fmt.Printf("md5(%s) => %s\n", in, hex)
+		fmt.Printf("\r%s %s", string(passwd), hex)
 		if strings.HasPrefix(hex, "00000") {
-			passwd = append(passwd, hex[5])
+			passwd[found] = hex[5]
 			found++
 		}
 	}
-	fmt.Println(string(passwd))
+	fmt.Printf("\r%s\n", string(passwd))
 }
