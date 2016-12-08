@@ -2,12 +2,24 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+var (
+	DrawSpeed time.Duration
+	DrawChar  string
+)
+
+func init() {
+	flag.DurationVar(&DrawSpeed, "delay", 20*time.Millisecond, "Delay between screen draws")
+	flag.StringVar(&DrawChar, "c", "\u2588", "The character to use for drawing an active pixel")
+	flag.Parse()
+}
 
 func main() {
 	screen := new([6][50]bool)
@@ -56,7 +68,7 @@ func main() {
 }
 
 func drawScreen(scr *[6][50]bool) {
-	time.Sleep(10 * time.Millisecond)
+	time.Sleep(DrawSpeed)
 	fmt.Print("\033c\u250C")
 	for i := 0; i < 50; i++ {
 		fmt.Print("\u2500")
@@ -70,7 +82,7 @@ func drawScreen(scr *[6][50]bool) {
 				//fmt.Print("#")
 				//fmt.Print("\u203B")
 				//fmt.Print("\u220e")
-				fmt.Print("\u2588")
+				fmt.Print(DrawChar)
 			} else {
 				fmt.Print(" ")
 			}
