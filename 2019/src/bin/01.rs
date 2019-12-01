@@ -17,8 +17,8 @@ fn main() -> Result<()> {
         fuel_per_component += calc_fuel(mass);
         total_fuel_required += calc_fuel_weight(mass);
     }
-    println!("Fuel for compomenets:\t{}", fuel_per_component);
-    println!("Total fuel required:\t{}", total_fuel_required);
+    println!("Fuel for components: {}", fuel_per_component);
+    println!("Total fuel required: {}", total_fuel_required);
     Ok(())
 }
 
