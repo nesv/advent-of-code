@@ -9,20 +9,23 @@ fn main() -> Result<()> {
         }
     };
     let input: String = std::fs::read_to_string(in_file)?;
-    let mem: Vec<usize> = input.trim_end().split(",").map(|i| match i.parse::<usize>() {
-        Ok(v) => v,
-        Err(err) => {
-            eprintln!("{}: {}", err, i);
-            std::process::exit(1);
-        },
-    }).collect();
+    let mem: Vec<usize> = input
+        .trim_end()
+        .split(",")
+        .map(|i| match i.parse::<usize>() {
+            Ok(v) => v,
+            Err(err) => {
+                eprintln!("{}: {}", err, i);
+                std::process::exit(1);
+            },
+        })
+    .collect();
 
     // Part 1.
     let mut p1 = mem.clone();
     p1[1] = 12;
     p1[2] = 2;
-    let after = compute(p1);
-    println!("{}", after[0]);
+    println!("{}", compute(p1)[0]);
 
     // Part 2.
     let want = 19690720;
@@ -32,8 +35,7 @@ fn main() -> Result<()> {
             mem[1] = noun;
             mem[2] = verb;
             if compute(mem)[0] == want {
-                let result = (100 * noun) + verb;
-                println!("{}", result);
+                println!("{}", (100 * noun) + verb);
                 return Ok(());
             }
         }
