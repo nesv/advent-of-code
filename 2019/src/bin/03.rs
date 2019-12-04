@@ -17,13 +17,25 @@ fn main() -> Result<()> {
 
     // Collect the directions into line segments.
     let mut paths: Vec<Vec<LineSegment>> = vec![];
-    let mut directions: Vec<Directions> = vec![];
+    let mut directions: Vec<Vec<Direction>> = vec![];
     match input.split_lines(",") {
         Some(lines) => {
             for line in lines {
-                let dirs: Directions = line.into_iter().map(|d| Direction::new(&d)).collect();
-                paths.push(dirs.clone().into());
+                let mut dirs: Vec<Direction> = vec![];
+                for l in line.into_iter() {
+                    dirs.push(Direction::new(&l));
+                }
+
+                let mut path: Vec<LineSegment> = vec![];
+                let mut start = Point::new(0, 0);
+                for d in dirs.iter() {
+                    let end = start.travel(&d);
+                    path.push(LineSegment::new(start, end));
+                    start = end;
+                }
+
                 directions.push(dirs);
+                paths.push(path);
             }
         }
         None => {
@@ -176,11 +188,18 @@ fn test_part2() {
 /// Find the intersections, but count the number of steps it took
 /// for each wire to reach that intersection.
 /// Sum the number of steps from each wire, and return the lowest sum.
-fn part2(directions: &Vec<Directions>) -> Result<i64> {
-    let paths: Vec<Vec<LineSegment>> = directions
-        .iter()
-        .map(|dv| Directions::new(dv).into())
-        .collect();
+fn part2(directions: &Vec<Vec<Direction>>) -> Result<i64> {
+    let mut paths: Vec<Vec<LineSegment>> = vec![];
+    for dirs in directions {
+        let mut path: Vec<LineSegment> = vec![];
+        let mut start = Point::new(0, 0);
+        for dir in dirs {
+            let end = start.travel(&dir);
+            path.push(LineSegment::new(start, end));
+            start = end;
+        }
+        paths.push(path);
+    }
     let intersections = match find_intersections(&paths) {
         Some(v) => v,
         None => {

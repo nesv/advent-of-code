@@ -1,5 +1,5 @@
 use std::fmt;
-use std::iter::{FromIterator, IntoIterator, Iterator};
+use std::iter::{FromIterator, Iterator};
 
 #[derive(Clone)]
 pub struct Directions(Vec<Direction>);
@@ -49,18 +49,6 @@ impl Into<Vec<LineSegment>> for Directions {
     }
 }
 
-impl Into<Vec<Direction>> for Directions {
-    fn into(self) -> Vec<Direction> {
-        self.0
-    }
-}
-
-impl From<Vec<Direction>> for Directions {
-    fn from(dirs: Vec<Direction>) -> Self {
-        Self::new(dirs)
-    }
-}
-
 impl FromIterator<Direction> for Directions {
     fn from_iter<I: IntoIterator<Item = Direction>>(iter: I) -> Self {
         let mut c = Vec::new();
@@ -70,6 +58,21 @@ impl FromIterator<Direction> for Directions {
         Directions::from(c)
     }
 }
+
+impl From<Vec<Direction>> for Directions {
+    fn from(dirs: Vec<Direction>) -> Self {
+        Self::new(dirs)
+    }
+}
+
+/*
+impl Into<Vec<Direction>> for Directions {
+    fn into(self) -> Vec<Direction> {
+        self.0
+    }
+}
+
+*/
 
 /// Direction represents a direction given from the puzzle input.
 ///
