@@ -51,6 +51,14 @@ impl Input {
         }
         Some(v)
     }
+
+    /// Returns the input data as a `String`.
+    pub fn to_string(&self) -> Option<String> {
+        if let Some(d) = &self.data {
+            return Some(String::from(d.trim()));
+        }
+        None
+    }
 }
 
 impl From<&str> for Input {
