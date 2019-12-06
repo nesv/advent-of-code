@@ -1,6 +1,8 @@
 use std::fmt;
 use std::iter::{FromIterator, Iterator};
 
+/// A simple wrapper over a `Vec<Direction>`, for the sole purpose of providing
+/// some convenience methods.
 #[derive(Clone)]
 pub struct Directions(Vec<Direction>);
 
@@ -110,10 +112,13 @@ impl Direction {
     }
 }
 
+/// Represents a location on a Cartesian plane, as a pair of `(x, y)`
+/// coordinates.
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct Point(i64, i64);
 
 impl Point {
+    /// Creates a new `Point` from the given coordinates.
     pub fn new(x: i64, y: i64) -> Self {
         Point(x, y)
     }
@@ -132,10 +137,12 @@ impl Point {
             && (self.1 <= max(s.start.1, s.end.1) && self.1 >= min(s.start.1, s.end.1))
     }
 
+    /// Returns the X-coordinate of the point.
     pub fn x(&self) -> i64 {
         self.0
     }
 
+    /// Returns the Y-coordinate of the point.
     pub fn y(&self) -> i64 {
         self.1
     }
@@ -159,6 +166,8 @@ impl fmt::Display for Point {
     }
 }
 
+/// Represents a line segment on a Cartesian plane, as two pairs of coordinates,
+/// `(p1, p2)` and `(q1, q2)`.
 #[derive(Debug)]
 pub struct LineSegment {
     start: Point,
