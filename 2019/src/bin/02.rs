@@ -1,14 +1,45 @@
-use std::io::Result;
+use aoc::{
+    Input,
+    intcode::Program,
+};
+use std::io::{Error, ErrorKind, Result};
 
 fn main() -> Result<()> {
     let in_file: String = match std::env::args().nth(1) {
         Some(v) => v,
         None => {
-            eprintln!("Specify a path to the input file");
-            std::process::exit(1);
-        }
+            return Err(Error::new(ErrorKind::InvalidInput, "no input file specified"));
+        },
     };
-    let input: String = std::fs::read_to_string(in_file)?;
+    let input = Input::from_file(in_file)?;
+
+    let code = input.to_string().unwrap();
+
+    // Part 1.
+    let mut program = Program::from(code.as_str());
+    program.set_mem(1, 12)?;
+    program.set_mem(2, 2)?;
+    let (mem, _) = program.execute()?;
+    println!("{}", mem[0]);
+
+    // Part 2.
+    let mut program = Program::from(code.as_str());
+    let want = 19690720.to_string();
+    for noun in 0..100 {
+        for verb in 0..100 {
+            program.set_mem(1, noun)?;
+            program.set_mem(2, verb)?;
+
+            let (mem, _output) = program.execute()?;
+            if mem[0] == want {
+                println!("{}", (100 * noun) + verb);
+                return Ok(());
+            }
+        }
+    }
+
+
+    /*
     let mem: Vec<usize> = input
         .trim_end()
         .split(",")
@@ -40,10 +71,12 @@ fn main() -> Result<()> {
             }
         }
     }
+    */
 
     Ok(())
 }
 
+/*
 fn compute(mem: Vec<usize>) -> Vec<usize> {
     let mut mem = mem.clone();
     let mut i: usize = 0;
@@ -79,19 +112,4 @@ fn compute(mem: Vec<usize>) -> Vec<usize> {
     }
     mem
 }
-
-#[test]
-fn test_compute() {
-    let v = compute(vec![1, 0, 0, 0, 99]);
-    assert_eq!(v[0], 2);
-
-    let v = compute(vec![2, 3, 0, 3, 99]);
-    assert_eq!(v[3], 6);
-
-    let v = compute(vec![2, 4, 4, 5, 99, 0]);
-    assert_eq!(v[5], 9801);
-
-    let v = compute(vec![1, 1, 1, 4, 99, 5, 6, 0, 99]);
-    assert_eq!(v[0], 30);
-    assert_eq!(v[4], 2);
-}
+*/

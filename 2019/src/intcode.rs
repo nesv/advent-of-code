@@ -16,15 +16,17 @@ use std::io::{Error, ErrorKind, Result};
 /// The implementation for `Vec<String>` is expected to be the input, split on
 /// each "," character.
 pub struct Program {
-    // Initial state of the computer.
-    // This would be set by the `Computer::load` function.
+    // Initial state of the program.
     mem: Vec<String>,
+
+    // Any input to the program.
+    input: Option<i64>,
 }
 
 impl From<&str> for Program {
     fn from(s: &str) -> Self {
         let mem: Vec<String> = s.split(",").map(|v| v.to_string()).collect();
-        Self { mem }
+        Self { mem, input: None }
     }
 }
 
@@ -36,23 +38,22 @@ impl From<String> for Program {
 
 impl From<Vec<String>> for Program {
     fn from(v: Vec<String>) -> Self {
-        Self { mem: v }
+        Self { mem: v, input: None }
     }
 }
 
 impl Program {
-    /// Load the program from existing memory.
-    pub fn load(mem: Vec<String>) -> Result<Self> {
-        if mem.len() == 0 {
-            return Err(Error::new(ErrorKind::InvalidInput, "no instructions in program"));
-        }
-        Ok(Self { mem })
+    /// Set the input for the program to `v`.
+    /// This is typically called before `execute`.
+    pub fn input(&mut self, v: i64) -> &mut Self {
+        self.input = Some(v);
+        self
     }
 
     /// Execute runs the program the computer was loaded with, and returns
     /// the final memory representation of the program, along with anything
     /// that was output.
-    pub fn execute(&self, input: i64) -> Result<(Vec<String>, Vec<String>)> {
+    pub fn execute(&self) -> Result<(Vec<String>, Vec<String>)> {
         let mut mem = self.mem.clone();
         let mut output: Vec<String> = vec![];
         let mut ip: usize = 0; // instruction pointer
@@ -81,7 +82,7 @@ impl Program {
                 },
 
                 Instruction::Input(op) => {
-                    mem[op] = input.to_string();
+                    mem[op] = self.input.unwrap_or(0).to_string();
                 },
 
                 Instruction::Output(p) => {
@@ -161,6 +162,17 @@ impl Program {
             Parameter::UnexpectedMode(m) => { panic!("unexpected mode: {}", m); },
         }
     }
+
+    /// Set the value of memory at `position` to `value`.
+    /// If `position` is not within the range of the currently-allocated memory,
+    /// an error is returned.
+    pub fn set_mem(&mut self, position: usize, value: i64) -> Result<()> {
+        if position >= self.mem.len() {
+            return Err(Error::new(ErrorKind::InvalidInput, "position is out of range"));
+        }
+        self.mem[position] = value.to_string();
+        Ok(())
+    }
 }
 
 #[derive(Debug)]
@@ -189,7 +201,7 @@ impl Instruction {
     ///
     /// For example, the short program `1002,4,3,4,33`, is parsed like so:
     /// 
-    /// ```
+    /// ```ignore
     /// ABCDE
     ///  1002,4,3,4
     /// ```
@@ -328,9 +340,8 @@ fn test_program() {
     
     for (inp, want) in &tests {
         let input = dbg!(String::from(*inp));
-        let prog: Vec<String> = input.split(",").map(|s| s.to_string()).collect();
-        let p = Program::load(prog).unwrap();
-        let (mem, _output) = pc.execute(1).unwrap();
+        let mut p = Program::from(input);
+        let (mem, _output) = p.input(1).execute().unwrap();
         assert_eq!(&mem[0], want);
     }
 }
@@ -339,14 +350,13 @@ fn test_program() {
 fn test_eq_8_positional() {
     // Output 1 if the input is equal to 8, or 0 if it is not.
     let code = String::from("3,9,8,9,10,9,4,9,99,-1,8");
-    let program: Vec<String> = code.split(",").map(|s| s.to_string()).collect();
-    let c = Computer::load(program).unwrap();
+    let mut program = Program::from(code);
 
-    let (_, out) = c.execute(8).unwrap();
+    let (_, out) = program.input(8).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "1");
 
-    let (_, out) = c.execute(88).unwrap();
+    let (_, out) = program.input(88).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "0");
 }
@@ -355,14 +365,13 @@ fn test_eq_8_positional() {
 fn test_lt_8_positional() {
     // Output 1 if the input is less than 8, or 0 otherwise.
     let code = String::from("3,9,7,9,10,9,4,9,99,-1,8");
-    let program: Vec<String> = code.split(",").map(|s| s.to_string()).collect();
-    let c = Computer::load(program).unwrap();
+    let mut program = Program::from(code);
 
-    let (_, out) = c.execute(7).unwrap();
+    let (_, out) = program.input(7).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "1");
 
-    let (_, out) = c.execute(88).unwrap();
+    let (_, out) = program.input(88).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "0");
 }
@@ -371,14 +380,13 @@ fn test_lt_8_positional() {
 fn test_eq_8_immediate() {
     // Output 1 if the input is equal to 8, or 0 otherwise.
     let code = String::from("3,3,1108,-1,8,3,4,3,99");
-    let program: Vec<String> = code.split(",").map(|s| s.to_string()).collect();
-    let c = Computer::load(program).unwrap();
+    let mut program = Program::from(code);
 
-    let (_, out) = c.execute(8).unwrap();
+    let (_, out) = program.input(8).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "1");
 
-    let (_, out) = c.execute(88).unwrap();
+    let (_, out) = program.input(88).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "0");
 }
@@ -387,14 +395,13 @@ fn test_eq_8_immediate() {
 fn test_lt_8_immediate() {
     // Output 1 if the input is less than 8, or 0 otherwise.
     let code = String::from("3,3,1107,-1,8,3,4,3,99");
-    let program: Vec<String> = code.split(",").map(|s| s.to_string()).collect();
-    let c = Computer::load(program).unwrap();
+    let mut program = Program::from(code);
 
-    let (_, out) = c.execute(7).unwrap();
+    let (_, out) = program.input(7).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "1");
 
-    let (_, out) = c.execute(88).unwrap();
+    let (_, out) = program.input(88).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "0");
 }
@@ -403,14 +410,13 @@ fn test_lt_8_immediate() {
 fn test_jump_positional() {
     // Output 0 if the input was 0, otherwise return 1.
     let code = String::from("3,12,6,12,15,1,13,14,13,4,13,99,-1,0,1,9");
-    let program: Vec<String> = code.split(",").map(|s| s.to_string()).collect();
-    let c = Computer::load(program).unwrap();
+    let mut program = Program::from(code);
 
-    let (_, out) = c.execute(0).unwrap();
+    let (_, out) = program.execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "0");
 
-    let (_, out) = c.execute(88).unwrap();
+    let (_, out) = program.input(88).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "1");
 }
@@ -419,14 +425,13 @@ fn test_jump_positional() {
 fn test_jump_immediate() {
     // Output 0 if the input was 0, otherwise return 1.
     let code = String::from("3,3,1105,-1,9,1101,0,0,12,4,12,99,1");
-    let program: Vec<String> = code.split(",").map(|s| s.to_string()).collect();
-    let c = Computer::load(program).unwrap();
+    let mut program = Program::from(code);
 
-    let (_, out) = c.execute(0).unwrap();
+    let (_, out) = program.execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "0");
 
-    let (_, out) = c.execute(88).unwrap();
+    let (_, out) = program.input(88).execute().unwrap();
     assert_eq!(out.len(), 1);
     assert_eq!(&out[0], "1");
 }
@@ -440,18 +445,17 @@ fn test_large_example() {
     // * 1001 if the input is greater-than 8.
     //
     let code = String::from("3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99");
-    let program: Vec<String> = code.split(",").map(|s| s.to_string()).collect();
-    let c = Computer::load(program).unwrap();
+    let mut program = Program::from(code);
 
-    let (_mem, output) = c.execute(7).unwrap();
+    let (_mem, output) = program.input(7).execute().unwrap();
     assert_eq!(output.len(), 1);
     assert_eq!(&output[0], "999");
 
-    let (_mem, output) = c.execute(8).unwrap();
+    let (_mem, output) = program.input(8).execute().unwrap();
     assert_eq!(output.len(), 1);
     assert_eq!(&output[0], "1000");
 
-    let (_mem, output) = c.execute(9).unwrap();
+    let (_mem, output) = program.input(9).execute().unwrap();
     assert_eq!(output.len(), 1);
     assert_eq!(&output[0], "1001");
 }

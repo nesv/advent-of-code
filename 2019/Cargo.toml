@@ -5,3 +5,9 @@ authors = ["Nick Saika <nicksaika@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"

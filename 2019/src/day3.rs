@@ -79,6 +79,8 @@ impl Into<Vec<Direction>> for Directions {
 /// #Example
 ///
 /// ```
+/// use aoc::Direction;
+///
 /// let d = Direction::new("R35");
 /// ```
 #[derive(Clone, Debug, PartialEq)]
