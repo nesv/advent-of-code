@@ -1,5 +1,6 @@
 mod day3;
 mod input;
+pub mod intcode;
 
 pub use day3::{Direction, Directions, LineSegment, Point};
 pub use input::Input;
