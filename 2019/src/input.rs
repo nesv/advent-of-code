@@ -36,7 +36,11 @@ impl Input {
     /// `Vec<String>` to make the puzzle input useful.
     pub fn lines(&self) -> Option<Vec<String>> {
         if let Some(d) = &self.data {
-            let v: Vec<String> = d.split("\n").map(|s| s.to_string()).collect();
+            let v: Vec<String> = d
+                .split("\n")
+                .filter(|s| s.len() != 0)
+                .map(|s| s.to_string())
+                .collect();
             return Some(v);
         }
         None
