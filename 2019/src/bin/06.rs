@@ -124,7 +124,7 @@ fn main() -> Result<()> {
         indirect += follow(&orbits, k);
     }
 
-    println!("Total orbits: {}", indirect);
+    println!("{}", indirect);
 
     // Figure out how many orbital transfers are required between
     // "YOU" and "SAN".
@@ -157,7 +157,7 @@ fn main() -> Result<()> {
     let yx = you_path.iter().position(|&p| p == common).unwrap();
     let sx = san_path.iter().position(|&p| p == common).unwrap();
 
-    println!("Orbital transfers ({} -> {}): {}", "YOU", "SAN", yx + sx);
+    println!("{}", yx + sx);
 
     Ok(())
 }
