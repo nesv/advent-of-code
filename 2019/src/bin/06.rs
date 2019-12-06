@@ -82,6 +82,7 @@
 use aoc::Input;
 use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Result};
+use std::iter::successors;
 
 fn main() -> Result<()> {
     let in_file: String = match std::env::args().nth(1) {
@@ -118,12 +119,12 @@ fn main() -> Result<()> {
     // Count the number of direct, and indirect orbits by walking all
     // associations.
     let mut indirect = 0;
-    let keys: Vec<&str> = orbits.keys().map(|s| *s).collect();
+    let keys: Vec<&str> = orbits.keys().map(|&s| s).collect();
     for k in keys.iter() {
         indirect += follow(&orbits, k);
     }
 
-    println!("{}", indirect);
+    println!("Total orbits: {}", indirect);
 
     // Figure out how many orbital transfers are required between
     // "YOU" and "SAN".
@@ -136,36 +137,27 @@ fn main() -> Result<()> {
         }
     }
 
-    /*
-     * Adapted from
-     *  https://github.com/humantree/advent-of-code-2019/blob/master/orbit-map/src/main.rs
-    let you_orbits: Vec<&str> = std::iter::successors(Some(&"YOU"), |next| orbits_rev.get(*next))
+    let you_path: Vec<&str> = successors(Some(&"YOU"), |next| orbits_rev.get(*next))
         .skip(1)
-        .map(|v| *v)
+        .map(|&v| v)
         .collect();
-    let san_orbits: Vec<&str> = std::iter::successors(Some(&"SAN"), |next| orbits_rev.get(*next))
+    let san_path: Vec<&str> = successors(Some(&"SAN"), |next| orbits_rev.get(*next))
         .skip(1)
-        .map(|v| *v)
+        .map(|&v| v)
         .collect();
-    let mut intersection = "";
-    for o in &you_orbits {
-        if san_orbits.contains(&o) {
-            intersection = o;
+
+    let mut common: &str = "";
+    for i in &you_path {
+        if san_path.contains(i) {
+            common = i;
+            break;
         }
     }
 
-    let you_xfers = &you_orbits.iter().position(|p| p == &intersection).unwrap();
-    let san_xfers = &san_orbits.iter().position(|p| p == &intersection).unwrap();
-    let transfers = you_xfers + san_xfers;
-    */
+    let yx = you_path.iter().position(|&p| p == common).unwrap();
+    let sx = san_path.iter().position(|&p| p == common).unwrap();
 
-    // Start at the planet we are orbiting.
-    //
-    // NOTE(nesv): This works on the example input, but not my actual puzzle
-    // input.
-    let start = orbits_rev.get("YOU").unwrap();
-    let transfers = find_path(&orbits_rev, start, "SAN").expect("YOU -> SAN not found");
-    println!("{}", transfers);
+    println!("Orbital transfers ({} -> {}): {}", "YOU", "SAN", yx + sx);
 
     Ok(())
 }
@@ -176,7 +168,7 @@ fn parse_orbit(s: &str) -> (&str, &str) {
     let sep = match s.find(")") {
         Some(n) => n,
         None => {
-            panic!("no separator ')' in {}", s);
+            panic!("no separator ')' in {:?}", s);
         }
     };
     (&s[..sep], &s[sep + 1..])
@@ -201,27 +193,4 @@ fn follow(m: &HashMap<&str, Vec<&str>>, v: &str) -> usize {
             total
         }
     }
-}
-
-/// Walk `m`, starting at `start` until a path to `until` is found.
-/// Returns the shortest number of steps from start -> until.
-fn find_path(m: &HashMap<&str, &str>, from: &str, to: &str) -> Option<i32> {
-    if let Some(next) = m.get(from) {
-        // If the next node is `to`, then we have found the endpoint.
-        // We do not need to add anything to this, since we do not count the
-        // last jump.
-        if *next == to {
-            return Some(0);
-        }
-
-        // We need to go one level further.
-        if let Some(i) = find_path(m, next, to) {
-            return Some(i + 1);
-        }
-
-        // We have reached a dead end, and need to backtrack.
-        return Some(-1);
-    }
-    // We have reached a dead end.
-    None
 }
