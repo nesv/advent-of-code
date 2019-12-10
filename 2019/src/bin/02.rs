@@ -1,15 +1,15 @@
-use aoc::{
-    Input,
-    intcode::Program,
-};
+use aoc::{intcode::Program, Input};
 use std::io::{Error, ErrorKind, Result};
 
 fn main() -> Result<()> {
     let in_file: String = match std::env::args().nth(1) {
         Some(v) => v,
         None => {
-            return Err(Error::new(ErrorKind::InvalidInput, "no input file specified"));
-        },
+            return Err(Error::new(
+                ErrorKind::InvalidInput,
+                "no input file specified",
+            ));
+        }
     };
     let input = Input::from_file(in_file)?;
 
@@ -24,7 +24,7 @@ fn main() -> Result<()> {
 
     // Part 2.
     let mut program = Program::from(code.as_str());
-    let want = 19690720.to_string();
+    let want = 19690720;
     for noun in 0..100 {
         for verb in 0..100 {
             program.set_mem(1, noun)?;
@@ -37,7 +37,6 @@ fn main() -> Result<()> {
             }
         }
     }
-
 
     /*
     let mem: Vec<usize> = input
