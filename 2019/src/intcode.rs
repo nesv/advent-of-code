@@ -22,6 +22,10 @@ pub struct Program {
 
     // Any input to the program.
     input: Option<Vec<i64>>,
+
+    // The relative base for relative parameters.
+    // By default, the relative base is zero.
+    rel_base: usize,
 }
 
 impl From<&str> for Program {
@@ -33,7 +37,11 @@ impl From<&str> for Program {
                 n
             })
             .collect();
-        Self { mem, input: None }
+        Self {
+            mem,
+            input: None,
+            rel_base: 0,
+        }
     }
 }
 
@@ -54,6 +62,7 @@ impl From<Vec<String>> for Program {
                 })
                 .collect(),
             input: None,
+            rel_base: 0,
         }
     }
 }
@@ -63,6 +72,7 @@ impl From<Vec<i64>> for Program {
         Self {
             mem: v,
             input: None,
+            rel_base: 0,
         }
     }
 }
@@ -108,22 +118,39 @@ impl Program {
             let params: Vec<i64> = mem[ip..ip + nparams + 1].to_vec();
             let inst = Instruction::parse(params);
             //eprintln!("{:?}", &mem);
-            //eprintln!("{: <8}{:?}", &ip, &inst);
+            eprintln!("{: <8}{:?}", &ip, &inst);
             match inst {
                 Instruction::Add(n, v, op) => {
-                    let a = Self::resolve_param(&mem, &n);
-                    let b = Self::resolve_param(&mem, &v);
+                    let a = self.resolve_param(&mut mem, &n);
+                    let b = self.resolve_param(&mut mem, &v);
+                    let op = self.resolve_out_ptr(&op);
+                    if op >= mem.len() {
+                        mem.resize(op + 1, 0);
+                    }
                     mem[op] = a + b;
                 }
 
                 Instruction::Multiply(n, v, op) => {
-                    let a = Self::resolve_param(&mem, &n);
-                    let b = Self::resolve_param(&mem, &v);
+                    let a = self.resolve_param(&mut mem, &n);
+                    let b = self.resolve_param(&mut mem, &v);
+                    let op = self.resolve_out_ptr(&op);
+                    if op >= mem.len() {
+                        mem.resize(op + 1, 0);
+                    }
+
                     mem[op] = a * b;
                 }
 
-                Instruction::Input(op) => {
+                Instruction::Input(p) => {
+                    // We need to resolve the parameter differently than
+                    // `resolve_param`, since the value we want is what's
+                    // contained in `p`, and not resolved by a location in
+                    // `mem`.
+                    let op = self.resolve_out_ptr(&p);
                     if let Some(v) = self.get_input() {
+                        if op >= mem.len() {
+                            mem.resize(op + 1, 0);
+                        }
                         mem[op] = v;
                     } else {
                         return Err(Error::new(ErrorKind::InvalidInput, "no input available"));
@@ -131,31 +158,35 @@ impl Program {
                 }
 
                 Instruction::Output(p) => {
-                    let val = Self::resolve_param(&mem, &p);
+                    let val = self.resolve_param(&mut mem, &p);
                     output.push(val);
                 }
 
                 Instruction::JumpIfTrue(n, v) => {
-                    let a = Self::resolve_param(&mem, &n);
+                    let a = self.resolve_param(&mut mem, &n);
                     if a != 0 {
-                        let b = Self::resolve_param(&mem, &v);
+                        let b = self.resolve_param(&mut mem, &v);
                         ip = b as usize;
                         continue;
                     }
                 }
 
                 Instruction::JumpIfFalse(n, v) => {
-                    let a = Self::resolve_param(&mem, &n);
+                    let a = self.resolve_param(&mut mem, &n);
                     if a == 0 {
-                        let b = Self::resolve_param(&mem, &v);
+                        let b = self.resolve_param(&mut mem, &v);
                         ip = b as usize;
                         continue;
                     }
                 }
 
                 Instruction::LessThan(n, v, op) => {
-                    let a = Self::resolve_param(&mem, &n);
-                    let b = Self::resolve_param(&mem, &v);
+                    let a = self.resolve_param(&mut mem, &n);
+                    let b = self.resolve_param(&mut mem, &v);
+                    let op = self.resolve_out_ptr(&op);
+                    if op >= mem.len() {
+                        mem.resize(op + 1, 0);
+                    }
                     if a < b {
                         mem[op] = 1;
                     } else {
@@ -164,13 +195,23 @@ impl Program {
                 }
 
                 Instruction::Equals(n, v, op) => {
-                    let a = Self::resolve_param(&mem, &n);
-                    let b = Self::resolve_param(&mem, &v);
+                    let a = self.resolve_param(&mut mem, &n);
+                    let b = self.resolve_param(&mut mem, &v);
+                    let op = self.resolve_out_ptr(&op);
+                    if op >= mem.len() {
+                        mem.resize(op + 1, 0);
+                    }
                     if a == b {
                         mem[op] = 1;
                     } else {
                         mem[op] = 0;
                     }
+                }
+
+                Instruction::RelativeBaseOffset(p) => {
+                    let n = self.resolve_param(&mut mem, &p);
+                    self.rel_base = ((self.rel_base as i64) + n) as usize;
+                    self.rel_base;
                 }
 
                 Instruction::HCF => {
@@ -198,10 +239,41 @@ impl Program {
     // # Panics
     //
     // This method will panic if `param` is a `Parameter::UnexpectedMode`.
-    fn resolve_param(mem: &Vec<i64>, param: &Parameter) -> i64 {
+    fn resolve_param(&self, mem: &mut Vec<i64>, param: &Parameter) -> i64 {
         match param {
-            Parameter::Positional(i) => mem[*i],
+            Parameter::Positional(i) => {
+                if *i >= mem.len() {
+                    return 0;
+                }
+                mem[*i]
+            }
             Parameter::Immediate(n) => *n,
+            Parameter::Relative(n) => {
+                let i = (self.rel_base as i64 + n) as usize;
+                if i >= mem.len() {
+                    mem.resize(i + 1, 0);
+                }
+                mem[i]
+            }
+            Parameter::UnexpectedMode(m) => {
+                panic!("unexpected mode: {}", m);
+            }
+        }
+    }
+
+    /// Resolves a parameter as though it is a value indicating where to store
+    /// output to.
+    ///
+    /// # Panics
+    ///
+    /// If `param` is either `Relative` or `UnexpectedMode`.
+    fn resolve_out_ptr(&self, param: &Parameter) -> usize {
+        match param {
+            Parameter::Positional(u) => *u,
+            Parameter::Relative(i) => (self.rel_base as i64 + i) as usize,
+            Parameter::Immediate(u) => {
+                panic!("resolve immediate output pointer: {}", u);
+            }
             Parameter::UnexpectedMode(m) => {
                 panic!("unexpected mode: {}", m);
             }
@@ -225,14 +297,15 @@ impl Program {
 
 #[derive(Debug)]
 enum Instruction {
-    Add(Parameter, Parameter, usize),
-    Multiply(Parameter, Parameter, usize),
-    Input(usize),
+    Add(Parameter, Parameter, Parameter),
+    Multiply(Parameter, Parameter, Parameter),
+    Input(Parameter),
     Output(Parameter),
     JumpIfTrue(Parameter, Parameter),
     JumpIfFalse(Parameter, Parameter),
-    LessThan(Parameter, Parameter, usize),
-    Equals(Parameter, Parameter, usize),
+    LessThan(Parameter, Parameter, Parameter),
+    Equals(Parameter, Parameter, Parameter),
+    RelativeBaseOffset(Parameter),
 
     /// Program stop.
     HCF,
@@ -276,10 +349,12 @@ impl Instruction {
             // Figure out the "mode" for the current parameter we are consuming.
             // 0 => (default) Positional mode.
             // 1 => Immediate mode.
+            // 2 => Relative mode.
             let mode = (v[0] / 10_i64.pow(i as u32 + 2)) % 10;
             let param = match mode {
                 0 => Parameter::Positional(v[i + 1] as usize),
                 1 => Parameter::Immediate(v[i + 1]),
+                2 => Parameter::Relative(v[i + 1]),
                 _ => Parameter::UnexpectedMode(mode),
             };
             params.push(param);
@@ -288,19 +363,26 @@ impl Instruction {
         // Parse the final argument as an output pointer.
         // Enough instructions use this to know which memory location to store
         // their output, that it makes sense to parse it all the time.
-        let optr: usize = v[v.len() - 1] as usize;
+        //let optr: usize = v[v.len() - 1] as usize;
 
         // Finally, return an Instruction.
+        if v[0] == 99 {
+            return Self::HCF;
+        }
         match Instruction::ones(v[0]) {
-            1 => Self::Add(params[0], params[1], optr),
-            2 => Self::Multiply(params[0], params[1], optr),
-            3 => Self::Input(optr),
+            1 => Self::Add(params[0], params[1], params[2]),
+            2 => Self::Multiply(params[0], params[1], params[2]),
+            3 => Self::Input(params[0]),
             4 => Self::Output(params[0]),
             5 => Self::JumpIfTrue(params[0], params[1]),
             6 => Self::JumpIfFalse(params[0], params[1]),
-            7 => Self::LessThan(params[0], params[1], optr),
-            8 => Self::Equals(params[0], params[1], optr),
-            9 => Self::HCF,
+            7 => Self::LessThan(params[0], params[1], params[2]),
+            8 => Self::Equals(params[0], params[1], params[2]),
+            9 => match Instruction::tens(v[0]) {
+                0 => Self::RelativeBaseOffset(params[0]),
+                9 => Self::HCF,
+                _ => Self::BadInput(v),
+            },
             _ => Self::BadInput(v),
         }
     }
@@ -320,6 +402,7 @@ impl Instruction {
             6 => 2, // jump-if-false
             7 => 3, // less-than
             8 => 3, // equals
+            9 => 1, // relative base offset
             _ => {
                 panic!("Bad opcode {}", opcode);
             }
@@ -339,10 +422,16 @@ impl Instruction {
 /// Positional mode is the default, which means the value for the given
 /// parameter must be looked up at the given memory address/position.
 /// Immediate mode means the given value is used as-is (it is not a reference).
+///
+/// The `Relative` parameter holds a number indicating the "relative base" for
+/// all relative parameters.
+/// By default, the relative base is 0 (zero).
+/// The relative base should be added to whatever the current relative base is.
 #[derive(Clone, Copy, Debug)]
 enum Parameter {
     Positional(usize),
     Immediate(i64),
+    Relative(i64),
 
     // Indicates the parameter has an unexpected mode.
     UnexpectedMode(i64),
@@ -358,6 +447,7 @@ fn test_num_params() {
     assert_eq!(Instruction::num_params(6), 2);
     assert_eq!(Instruction::num_params(7), 3);
     assert_eq!(Instruction::num_params(8), 3);
+    assert_eq!(Instruction::num_params(9), 1);
     assert_eq!(Instruction::num_params(99), 0);
 }
 
@@ -473,4 +563,36 @@ fn test_large_example() {
     let (_mem, output) = program.input(9).execute().unwrap();
     assert_eq!(output.len(), 1);
     assert_eq!(output[0], 1001);
+}
+
+#[test]
+fn test_boost_self() {
+    // The output should be the initial program.
+    let code = String::from("109,1,204,-1,1001,100,1,100,1008,100,16,101,1006,101,0,99");
+    let mut program = Program::from(code.as_str());
+
+    let (_, out) = program.execute().unwrap();
+    let out: Vec<String> = out.iter().map(|&n| n.to_string()).collect();
+    assert_eq!(code, out.join(","));
+}
+
+#[test]
+fn test_boost_bignum() {
+    // Should output a 16-digit number.
+    let code = String::from("1102,34915192,34915192,7,4,7,99,0");
+    let mut program = Program::from(code.as_str());
+
+    let (_, out) = program.execute().unwrap();
+    assert_eq!(out.len(), 1);
+    assert_eq!(out[0].to_string().len(), 16);
+}
+
+#[test]
+fn test_boost_middle_num() {
+    // Should output the big number in the middle.
+    let code = String::from("104,1125899906842624,99");
+    let mut program = Program::from(code.as_str());
+    let (_, out) = program.execute().unwrap();
+    assert_eq!(out.len(), 1);
+    assert_eq!(out[0], 1125899906842624);
 }
