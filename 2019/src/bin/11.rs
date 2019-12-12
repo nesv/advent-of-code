@@ -177,16 +177,14 @@ fn part2(code: &str) -> Result<()> {
             max_y = k.y;
         }
     }
-    eprintln!("X positions: min={} max={}", &min_x, &max_x);
-    eprintln!("Y positions: min={} max={}", &min_y, &max_y);
     
     let mut canvas: Vec<Vec<Color>> = vec![];
     for y in (min_y..max_y + 1).rev() {
         for x in min_x..max_x + 1 {
             let pos = Position::new(x, y);
             match panels.get(&pos).unwrap_or(&Color::Black) {
-                Color::Black => { print!("\u{2588}"); }
-                Color::White => { print!(" "); }
+                Color::Black => { print!(" "); }
+                Color::White => { print!("\u{2588}"); }
             }
         }
         println!("");
