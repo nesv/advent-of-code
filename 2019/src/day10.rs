@@ -1,6 +1,7 @@
 use std::fmt;
 use std::iter::successors;
 
+#[derive(Clone)]
 pub struct Map {
     elements: Vec<Vec<Element>>,
 }
@@ -25,9 +26,12 @@ impl From<Vec<String>> for Map {
 
 impl fmt::Display for Map {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for row in &self.elements {
+        for (i, row) in self.elements.iter().enumerate() {
             for e in row {
                 write!(f, "{}", e)?;
+            }
+            if i == self.elements.len() - 1 {
+                break;
             }
             writeln!(f, "")?;
         }
@@ -45,15 +49,14 @@ impl Map {
         (0, 0)
     }
 
-    /// Returns a vector containing only the `Element::Asteroid` elements from
-    /// the map.
-    pub fn asteroids(&self) -> Vec<Element> {
-        let mut v: Vec<Element> = vec![];
+    /// Returns a vector containing the `Position`s of each asteroid on the map.
+    pub fn asteroids(&self) -> Vec<Position> {
+        let mut v: Vec<Position> = vec![];
         for line in &self.elements {
             for elt in line {
                 match elt {
-                    Element::Asteroid(_, _) => {
-                        v.push(*elt);
+                    Element::Asteroid(x, y) => {
+                        v.push(Position{ x: *x as i32, y: *y as i32 });
                     }
                     _ => {}
                 }
@@ -91,9 +94,50 @@ impl Map {
         .collect();
         elements
     }
+
+    /// Cast a ray in a particular direction, from `start`, and returns the
+    /// first asteroid on that path.
+    /// If there are no asteroids on that path, `cast_ray` will return `None`.
+    pub fn cast_ray(&self, start: &Element, dx: i32, dy: i32) -> Option<Element> {
+        // Never cast past these boundaries.
+        let (min_x, min_y) = (0, 0);
+        let (max_x, max_y) = self.size();
+        let max_x = max_x as i32;
+        let max_y = max_y as i32;
+
+        let (ax, ay) = start.coords();
+        let mut ax = ax as i32;
+        let mut ay = ay as i32;
+
+        loop {
+            // Calculate the next point we are going to look at, which is
+            // effectively calculating the slope of our line/ray.
+            //
+            // If our next point is going to reach outside of our boundaries,
+            // return early.
+            let bx = ax + dx;
+            if bx < min_x || bx >= max_x {
+                return None;
+            }
+
+            let by = ay + dy;
+            if by < min_y || by >= max_y {
+                return None;
+            }
+
+            match self.at(bx as usize, by as usize).unwrap() {
+                Element::Asteroid(x, y) => { return Some(Element::Asteroid(*x, *y)); }
+                Element::Nothing(x, y) => {
+                    ax = *x as i32;
+                    ay = *y as i32;
+                }
+                _ => { panic!("unexpected element"); }
+            }
+        }
+    }
 }
 
-#[derive(Copy, Clone, Hash, Debug, Eq, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Hash, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Element {
     Unknown(usize, usize),
     Nothing(usize, usize),
@@ -136,5 +180,76 @@ impl Element {
             Self::Nothing(x, y) => (*x, *y),
             Self::Unknown(x, y) => (*x, *y),
         }
+    }
+}
+
+#[derive(Debug, Eq, Hash, PartialEq)]
+pub struct Angle {
+    xsign: i32,
+    ratio: num::rational::Ratio<i32>,
+}
+
+impl Angle {
+    pub fn new(x: i32, y: i32) -> Self {
+        let xsign = x.signum();
+        let ysign = y.signum();
+        let ratio = if xsign == 0 {
+            num::rational::Ratio::new(ysign, 1)
+        } else {
+            num::rational::Ratio::new(y, x)
+        };
+
+        Angle { xsign, ratio }
+    }
+}
+
+
+impl std::cmp::PartialOrd for Angle {
+    fn partial_cmp(&self, other: &Angle) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(&other))
+    }
+}
+
+use std::cmp::Ordering;
+
+impl std::cmp::Ord for Angle {
+    fn cmp(&self, other: &Angle) -> Ordering {
+        if self == other {
+            return Ordering::Equal;
+        }
+        if self.xsign == 0 && self.ratio.numer() < &0 {
+            return Ordering::Less;
+        }
+        if other.xsign == 0 && other.ratio.numer() < &0 {
+            return Ordering::Greater;
+        }
+        if self.xsign > 0 && other.xsign <= 0 {
+            return Ordering::Less;
+        }
+        if other.xsign > 0 && self.xsign <= 0 {
+            return Ordering::Greater;
+        }
+        if self.xsign > 0 && other.xsign > 0 {
+            return self.ratio.cmp(&other.ratio);
+        }
+        if self.xsign == 0 {
+            return Ordering::Less;
+        }
+        if other.xsign == 0 {
+            return Ordering::Greater;
+        }
+        self.ratio.cmp(&other.ratio)
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+pub struct Position {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl Position {
+    pub fn new(x: i32, y: i32) -> Self {
+        Position{ x, y }
     }
 }

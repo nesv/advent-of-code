@@ -17,13 +17,13 @@ fn main() -> Result<()> {
     let mut program = Program::from(code.as_str());
 
     // Part 1.
-    let (_mem, out) = program.input(1).execute()?;
+    let out = program.input(1).execute()?;
     for line in out {
         println!("{}", line);
     }
 
     // Part 2.
-    let (_mem, out) = program.input(2).execute()?;
+    let out = program.reset(code.as_str()).input(2).execute()?;
     for line in out {
         println!("{}", line);
     }

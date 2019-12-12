@@ -1,6 +1,8 @@
 //! Helper types and functions for
 //! [Advent of Code 2019](https://adventofcode.com/2019).
 
+extern crate num;
+
 pub mod day10;
 mod day3;
 mod input;

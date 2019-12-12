@@ -16,14 +16,14 @@ fn main() -> Result<()> {
     let code = input.to_string().unwrap();
 
     // Part 1.
-    let mut p = Program::from(code);
-    let (_, output) = p.input(1).execute()?;
+    let mut p = Program::from(code.as_str());
+    let output = p.input(1).execute()?;
     for line in output {
         println!("{}", line);
     }
 
     // Part 2.
-    let (_, output) = p.input(5).execute()?;
+    let output = p.reset(code.as_str()).input(5).execute()?;
     for line in output {
         println!("{}", line);
     }
