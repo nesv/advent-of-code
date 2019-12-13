@@ -84,8 +84,7 @@ impl From<Vec<i64>> for Program {
 
 impl Program {
     fn mem_from_str(s: &str) -> Vec<i64> {
-        s
-            .split(",")
+        s.split(",")
             .map(|v| {
                 let n: i64 = v.parse().unwrap();
                 n
@@ -160,12 +159,12 @@ impl Program {
             //eprintln!("{: >8}: {:?}", &self.ip, &inst);
             match inst {
                 Instruction::Input(_p) => match self.peek_input() {
-                    None => { 
+                    None => {
                         self.reason = Some(Stop::WaitingForInput);
                         return Ok(output);
                     }
                     _ => {}
-                }
+                },
                 _ => {}
             }
 
@@ -200,7 +199,7 @@ impl Program {
                     // `self.mem`.
                     let op = self.resolve_out_ptr(&p);
                     if let Some(v) = self.take_input() {
-                        self.set_mem(op, v)?;
+                        self.set_mem(op, v);
                     }
                 }
 
@@ -230,9 +229,9 @@ impl Program {
                     let b = self.resolve_param(&v);
                     let op = self.resolve_out_ptr(&op);
                     if a < b {
-                        self.set_mem(op, 1)?;
+                        self.set_mem(op, 1);
                     } else {
-                        self.set_mem(op, 0)?;
+                        self.set_mem(op, 0);
                     }
                 }
 
@@ -241,9 +240,9 @@ impl Program {
                     let b = self.resolve_param(&v);
                     let op = self.resolve_out_ptr(&op);
                     if a == b {
-                        self.set_mem(op, 1)?;
+                        self.set_mem(op, 1);
                     } else {
-                        self.set_mem(op, 0)?;
+                        self.set_mem(op, 0);
                     }
                 }
 
@@ -320,12 +319,11 @@ impl Program {
     /// currently-allocated memory, more memory will be allocated.
     /// Any memory between the old boundary and `position` will be filled with
     /// zeroes.
-    pub fn set_mem(&mut self, position: usize, value: i64) -> Result<()> {
+    pub fn set_mem(&mut self, position: usize, value: i64) {
         if position >= self.mem.len() {
             self.mem.resize(position + 1, 0);
         }
         self.mem[position] = value;
-        Ok(())
     }
 
     /// Resets any internal state, such as the relative base and any input,
