@@ -59,10 +59,15 @@ fn map_tractor_beam(code: &str, ax: isize, ay: isize) -> Result<isize> {
 // 100x100 ship to fit completely inside of it, then return those coordinates.
 fn part2(code: &str) -> Result<isize> {
     let mut x = 0;
-    for y in 100..100000 {
+    for y in 100..isize::max_value() {
+        // Advance the X-position until we are within the beam.
+        // NOTE: This tracks the bottom-left coordinate of the 100x100 square.
         while !point_in_beam(code, &Point { x, y })? {
             x += 1;
         }
+
+        // Check to see if the top-right corner of the square is also within
+        // the beam.
         if point_in_beam(
             code,
             &Point {
