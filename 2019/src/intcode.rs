@@ -8,7 +8,7 @@ use std::io::{Error, ErrorKind, Result};
 /// * `&str`
 /// * `String`
 /// * `Vec<String>`
-/// * `Vec<i64>`
+/// * `Vec<isize>`
 ///
 /// The implementations for `&str` and `String` expect the same input.
 /// The input for these intcode puzzles should be a single line, of
@@ -18,10 +18,10 @@ use std::io::{Error, ErrorKind, Result};
 /// each "," character.
 pub struct Program {
     // Initial state of the program.
-    mem: Vec<i64>,
+    mem: Vec<isize>,
 
     // Any input to the program.
-    input: Option<Vec<i64>>,
+    input: Option<Vec<isize>>,
 
     // The relative base for relative parameters.
     // By default, the relative base is zero.
@@ -58,7 +58,7 @@ impl From<Vec<String>> for Program {
             mem: v
                 .iter()
                 .map(|s| {
-                    let n: i64 = s.parse().unwrap();
+                    let n: isize = s.parse().unwrap();
                     n
                 })
                 .collect(),
@@ -70,8 +70,8 @@ impl From<Vec<String>> for Program {
     }
 }
 
-impl From<Vec<i64>> for Program {
-    fn from(v: Vec<i64>) -> Self {
+impl From<Vec<isize>> for Program {
+    fn from(v: Vec<isize>) -> Self {
         Self {
             mem: v,
             input: None,
@@ -83,10 +83,10 @@ impl From<Vec<i64>> for Program {
 }
 
 impl Program {
-    fn mem_from_str(s: &str) -> Vec<i64> {
+    fn mem_from_str(s: &str) -> Vec<isize> {
         s.split(",")
             .map(|v| {
-                let n: i64 = v.parse().unwrap();
+                let n: isize = v.parse().unwrap();
                 n
             })
             .collect()
@@ -94,13 +94,13 @@ impl Program {
 
     /// Set the input for the program to `v`.
     /// This is typically called before `execute`.
-    pub fn input(&mut self, v: i64) -> &mut Self {
+    pub fn input(&mut self, v: isize) -> &mut Self {
         if let Some(input) = &mut self.input {
             input.push(v);
             return self;
         }
 
-        let input: Vec<i64> = vec![v];
+        let input: Vec<isize> = vec![v];
         self.input = Some(input);
         self
     }
@@ -108,7 +108,7 @@ impl Program {
     /// Consumes the first input value provided via the `input` method.
     /// Successive calls to `get_input` will drain any input provided to the
     /// program before `execute` or `execute_mut` were called.
-    fn take_input(&mut self) -> Option<i64> {
+    fn take_input(&mut self) -> Option<isize> {
         if let Some(input) = &mut self.input {
             if input.len() == 0 {
                 return None;
@@ -120,7 +120,7 @@ impl Program {
 
     /// Returns the next available value for input, or `None` if there is
     /// no input available.
-    fn peek_input(&self) -> Option<i64> {
+    fn peek_input(&self) -> Option<isize> {
         if let Some(input) = &self.input {
             if input.len() == 0 {
                 return None;
@@ -150,8 +150,8 @@ impl Program {
 
     /// Execute runs the program the computer was loaded with, and returns
     /// the program's output.
-    pub fn execute(&mut self) -> Result<Vec<i64>> {
-        let mut output: Vec<i64> = vec![];
+    pub fn execute(&mut self) -> Result<Vec<isize>> {
+        let mut output: Vec<isize> = vec![];
         loop {
             // If our next instruction is an Input, but we do not have any
             // input, halt here, so that the caller can provide some.
@@ -248,7 +248,7 @@ impl Program {
 
                 Instruction::RelativeBaseOffset(p) => {
                     let n = self.resolve_param(&p);
-                    self.rel_base = ((self.rel_base as i64) + n) as usize;
+                    self.rel_base = ((self.rel_base as isize) + n) as usize;
                 }
 
                 Instruction::HCF => {
@@ -273,7 +273,7 @@ impl Program {
     // # Panics
     //
     // This method will panic if `param` is a `Parameter::UnexpectedMode`.
-    fn resolve_param(&mut self, param: &Parameter) -> i64 {
+    fn resolve_param(&mut self, param: &Parameter) -> isize {
         match param {
             Parameter::Positional(i) => {
                 if *i >= self.mem.len() {
@@ -283,7 +283,7 @@ impl Program {
             }
             Parameter::Immediate(n) => *n,
             Parameter::Relative(n) => {
-                let i = (self.rel_base as i64 + n) as usize;
+                let i = (self.rel_base as isize + n) as usize;
                 if i >= self.mem.len() {
                     self.mem.resize(i + 1, 0);
                 }
@@ -304,7 +304,7 @@ impl Program {
     fn resolve_out_ptr(&self, param: &Parameter) -> usize {
         match param {
             Parameter::Positional(u) => *u,
-            Parameter::Relative(i) => (self.rel_base as i64 + i) as usize,
+            Parameter::Relative(i) => (self.rel_base as isize + i) as usize,
             Parameter::Immediate(u) => {
                 panic!("resolve immediate output pointer: {}", u);
             }
@@ -319,7 +319,7 @@ impl Program {
     /// currently-allocated memory, more memory will be allocated.
     /// Any memory between the old boundary and `position` will be filled with
     /// zeroes.
-    pub fn set_mem(&mut self, position: usize, value: i64) {
+    pub fn set_mem(&mut self, position: usize, value: isize) {
         if position >= self.mem.len() {
             self.mem.resize(position + 1, 0);
         }
@@ -337,7 +337,7 @@ impl Program {
     }
 
     // Returns the value of memory at the given position, `pos`.
-    pub fn peek_mem(&self, pos: usize) -> i64 {
+    pub fn peek_mem(&self, pos: usize) -> isize {
         if pos >= self.mem.len() {
             return 0;
         }
@@ -372,7 +372,7 @@ enum Instruction {
 
     /// BadInput is returned by `Instruction::parse` when there are too many,
     /// or too few parameters provided.
-    BadInput(Vec<i64>),
+    BadInput(Vec<isize>),
 }
 
 impl Instruction {
@@ -397,7 +397,7 @@ impl Instruction {
     /// In plain English, this multiply instruction would multiply the value
     /// at program position 4, with the immediate value 3, and
     /// store the result in position 4.
-    fn parse(v: Vec<i64>) -> Self {
+    fn parse(v: Vec<isize>) -> Self {
         let np = Self::num_params(v[0]);
         if np + 1 != v.len() {
             return Self::BadInput(v);
@@ -410,7 +410,7 @@ impl Instruction {
             // 0 => (default) Positional mode.
             // 1 => Immediate mode.
             // 2 => Relative mode.
-            let mode = (v[0] / 10_i64.pow(i as u32 + 2)) % 10;
+            let mode = (v[0] / 10_isize.pow(i as u32 + 2)) % 10;
             let param = match mode {
                 0 => Parameter::Positional(v[i + 1] as usize),
                 1 => Parameter::Immediate(v[i + 1]),
@@ -445,7 +445,7 @@ impl Instruction {
     }
 
     // Returns the number of parameters that should be consumed by the opcode.
-    fn num_params(opcode: i64) -> usize {
+    fn num_params(opcode: isize) -> usize {
         if opcode == 99 {
             return 0;
         }
@@ -466,11 +466,11 @@ impl Instruction {
         }
     }
 
-    fn ones(n: i64) -> i64 {
+    fn ones(n: isize) -> isize {
         n % 10
     }
 
-    fn tens(n: i64) -> i64 {
+    fn tens(n: isize) -> isize {
         (n / 10) % 10
     }
 }
@@ -487,11 +487,11 @@ impl Instruction {
 #[derive(Clone, Copy, Debug)]
 enum Parameter {
     Positional(usize),
-    Immediate(i64),
-    Relative(i64),
+    Immediate(isize),
+    Relative(isize),
 
     // Indicates the parameter has an unexpected mode.
-    UnexpectedMode(i64),
+    UnexpectedMode(isize),
 }
 
 #[test]
