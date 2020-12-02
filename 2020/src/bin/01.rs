@@ -79,23 +79,24 @@ fn main() -> Result<()> {
 
     // Part 1: Find two numbers that add up to 2020,
     // and multiply them together for the answer.
-    let (a, b) = find_two(&nums)?;
+    let (a, b) = find_two(2020, &nums)?;
     println!("{} * {} = {}", a, b, a * b);
 
     // Part 2: Find three numbers that add up to 2020,
     // and multiple them together for the answer.
-    let (a, b, c) = find_three(&nums)?;
+    let (a, b, c) = find_three(2020, &nums)?;
     println!("{} * {} * {} = {}", a, b, c, a * b * c);
 
     Ok(())
 }
 
-/// Find two numbers that add to 2020.
-fn find_two(nums: &Vec<i32>) -> Result<(i32, i32)> {
-    for (i, n) in nums.iter().enumerate() {
+/// Find two numbers that add to `target`.
+#[inline]
+fn find_two(target: i32, nums: &Vec<i32>) -> Result<(i32, i32)> {
+    for i in 0..nums.len() - 2 {
         for j in i + 1..nums.len() - 1 {
-            if n + nums[j] == 2020 {
-                return Ok((*n, nums[j]));
+            if nums[i] + nums[j] == target {
+                return Ok((nums[i], nums[j]));
             }
         }
     }
@@ -116,15 +117,17 @@ fn test_find_two() {
         .map(|s| s.parse::<i32>().unwrap())
         .collect();
 
-    let (a, b) = find_two(&nums).unwrap();
+    let (a, b) = find_two(2020, &nums).unwrap();
     assert_eq!((a, b), (1721, 299));
 }
 
-fn find_three(nums: &Vec<i32>) -> Result<(i32, i32, i32)> {
+/// Find three numbers that add to `target`.
+#[inline]
+fn find_three(target: i32, nums: &Vec<i32>) -> Result<(i32, i32, i32)> {
     for i in 0..nums.len() - 3 {
         for j in i + 1..nums.len() - 2 {
             for k in i + 2..nums.len() - 1 {
-                if nums[i] + nums[j] + nums[k] == 2020 {
+                if nums[i] + nums[j] + nums[k] == target {
                     return Ok((nums[i], nums[j], nums[k]));
                 }
             }
@@ -147,6 +150,6 @@ fn test_find_three() {
         .map(|s| s.parse::<i32>().unwrap())
         .collect();
 
-    let (a, b, c) = find_three(&nums).unwrap();
+    let (a, b, c) = find_three(2020, &nums).unwrap();
     assert_eq!((a, b, c), (979, 366, 675));
 }
