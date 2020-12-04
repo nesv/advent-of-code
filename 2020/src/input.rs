@@ -30,6 +30,16 @@ impl Input {
         Ok(Self { data: Some(buffer) })
     }
 
+    /// Returns each line of the puzzle input, without removing any empty
+    /// lines.
+    pub fn raw_lines(&self) -> Option<Vec<String>> {
+        if let Some(d) = &self.data {
+            let v: Vec<String> = d.split("\n").map(|s| s.to_string()).collect();
+            return Some(v);
+        }
+        None
+    }
+
     /// Returns the puzzle input, split into lines with the newline characters
     /// removed.
     /// You may need to do additional parsing on the elements in the returned
