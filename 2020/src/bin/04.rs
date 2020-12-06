@@ -2,8 +2,6 @@
 
 use aoc2020::Input;
 use std::io::{Error, ErrorKind, Result};
-use std::num::ParseIntError;
-use std::str::FromStr;
 
 fn main() -> Result<()> {
     let infile: String = match std::env::args().nth(1) {
