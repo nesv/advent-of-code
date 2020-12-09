@@ -391,14 +391,14 @@ impl fmt::Display for Instruction {
         match self {
             Self::Nop => write!(f, "nop +0"),
             Self::Acc(n) => {
-                if n < 0 {
+                if n < &0 {
                     write!(f, "acc -{}", n)
                 } else {
                     write!(f, "acc +{}", n)
                 }
             }
             Self::Jmp(n) => {
-                if n < 0 {
+                if n < &0 {
                     write!(f, "jmp -{}", n)
                 } else {
                     write!(f, "jmp +{}", n)
