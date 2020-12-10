@@ -73,6 +73,24 @@ impl Input {
         }
         None
     }
+
+    /// Returns the input data as a `Vec<isize>`, assuming there is one
+    /// number per line.
+    pub fn numbers(&self) -> Option<Vec<isize>> {
+        if let Some(lines) = &self.lines() {
+            let v: Vec<isize> = lines
+                .iter()
+                .map(|ln| match ln.parse::<isize>() {
+                    Ok(n) => n,
+                    Err(e) => {
+                        panic!("parse {:?}: {}", ln, e);
+                    }
+                })
+                .collect();
+            return Some(v);
+        }
+        None
+    }
 }
 
 impl From<&str> for Input {
