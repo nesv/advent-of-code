@@ -5,8 +5,6 @@ authors = ["Nick Saika <nicksaika@gmail.com>"]
 edition = "2018"
 
 [dependencies]
-#num = "0.2"
-#rand = "0.7"
 scan_fmt = "0.2.5"
 
 [profile.release]
