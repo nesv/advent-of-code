@@ -5,6 +5,7 @@ authors = ["Nick Saika <nicksaika@gmail.com>"]
 edition = "2018"
 
 [dependencies]
+itertools = "0.10"
 scan_fmt = "0.2.5"
 
 [profile.release]
