@@ -24,10 +24,6 @@ fn main() -> Result<()> {
         .collect();
 
     // Part 1: Power consumption.
-    // Count the "gamma rate" by figuring out the most common bit
-    // in each position.
-    // The "epsilon rate" is the bitwise inverse of the "gamma" rate.
-    // Then, multiply the two values together.
     println!("power consumption = {}", power_consumption(&values));
 
     // Part 2: Life support rating.
@@ -61,7 +57,7 @@ fn gamma_rate(readings: &[usize]) -> usize {
 }
 
 fn epsilon_rate(gamma: usize) -> usize {
-    !gamma & 0b111111111111
+    !gamma & 0b1111_1111_1111
 }
 
 fn life_support_rating(readings: &[usize]) -> usize {
