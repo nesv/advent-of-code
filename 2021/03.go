@@ -24,7 +24,7 @@ func main() {
 
 		n, err := strconv.ParseUint(scanner.Text(), 2, 16)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "parse error: %q: %s", scanner.Text(), err)
+			fmt.Fprintf(os.Stderr, "parse error: %q: %s\n", scanner.Text(), err)
 			os.Exit(1)
 		}
 
